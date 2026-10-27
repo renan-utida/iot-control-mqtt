@@ -34,6 +34,7 @@ interface MqttContextValue {
   history: MqttMessage[];
   invalidMessage: InvalidMessage | null;
   commandStatus: CommandStatus;
+  commandError: string | null;
   connect: () => void;
   disconnect: () => void;
   applyBrokerUrl: (url: string) => string | null;
@@ -49,6 +50,7 @@ export function MqttProvider({ children }: { children: ReactNode }) {
   const [statusDetail, setStatusDetail] = useState<string | null>(mqttService.getDetail());
   const [telemetry, setTelemetry] = useState(initialTelemetry);
   const [commandStatus, setCommandStatus] = useState<CommandStatus>('idle');
+  const [commandError, setCommandError] = useState<string | null>(null);
 
   const confirmationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastConfirmationAt = useRef(0);
@@ -66,6 +68,7 @@ export function MqttProvider({ children }: { children: ReactNode }) {
     const unsubscribeStatus = mqttService.onStatusChange((nextStatus, detail) => {
       setStatus(nextStatus);
       setStatusDetail(detail);
+      setCommandError(null);
 
       if (nextStatus !== 'connected') {
         clearConfirmationTimer();
@@ -150,17 +153,18 @@ export function MqttProvider({ children }: { children: ReactNode }) {
       const startedAt = Date.now();
 
       clearConfirmationTimer();
+      setCommandError(null);
       setCommandStatus('sending');
 
       try {
         await mqttService.publish(TOPICS.comando, buildLampCommand(action));
       } catch (error) {
-        setCommandStatus('idle');
+        const message = error instanceof Error ? error.message : 'Falha ao enviar o comando.';
 
-        return {
-          ok: false,
-          error: error instanceof Error ? error.message : 'Falha ao enviar o comando.',
-        };
+        setCommandStatus('idle');
+        setCommandError(message);
+
+        return { ok: false, error: message };
       } finally {
         isSending.current = false;
       }
@@ -194,6 +198,7 @@ export function MqttProvider({ children }: { children: ReactNode }) {
       history: telemetry.history,
       invalidMessage: telemetry.invalidMessage,
       commandStatus,
+      commandError,
       connect,
       disconnect,
       applyBrokerUrl,
@@ -206,6 +211,7 @@ export function MqttProvider({ children }: { children: ReactNode }) {
       statusDetail,
       telemetry,
       commandStatus,
+      commandError,
       connect,
       disconnect,
       applyBrokerUrl,

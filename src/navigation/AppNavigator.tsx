@@ -2,9 +2,13 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import type { Theme } from '@react-navigation/native';
 import { useMemo } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BrandTitle } from '../components/BrandTitle';
+import { Icon } from '../components/Icon';
+import type { IconName } from '../components/Icon';
+import { LumenLogo } from '../components/LumenLogo';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { HistoryScreen } from '../screens/HistoryScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
@@ -20,8 +24,18 @@ const Tab = createBottomTabNavigator<RootTabParamList>();
 
 const TAB_BAR_HEIGHT = 64;
 
-function TabIcon({ symbol, focused }: { symbol: string; focused: boolean }) {
-  return <Text style={[styles.icon, { opacity: focused ? 1 : 0.55 }]}>{symbol}</Text>;
+function HeaderLogo() {
+  return (
+    <View style={styles.logo}>
+      <LumenLogo size={32} />
+    </View>
+  );
+}
+
+function tabIcon(name: IconName) {
+  return function TabIcon({ color, focused }: { color: string; focused: boolean }) {
+    return <Icon name={name} color={color} size={22} strokeWidth={focused ? 2.3 : 1.8} />;
+  };
 }
 
 export function AppNavigator() {
@@ -36,7 +50,7 @@ export function AppNavigator() {
       ...base,
       colors: {
         ...base.colors,
-        primary: colors.primary,
+        primary: colors.accent,
         background: colors.background,
         card: colors.surface,
         text: colors.text,
@@ -50,9 +64,12 @@ export function AppNavigator() {
     <NavigationContainer theme={navigationTheme}>
       <Tab.Navigator
         screenOptions={{
-          headerTitleStyle: { fontWeight: '700' },
+          headerLeft: HeaderLogo,
+          headerTitleAlign: 'left',
+          headerTitleStyle: { fontWeight: '800', fontSize: 18 },
+          tabBarActiveTintColor: colors.accent,
           tabBarInactiveTintColor: colors.muted,
-          tabBarLabelStyle: { fontSize: 12, lineHeight: 16, fontWeight: '600' },
+          tabBarLabelStyle: { fontSize: 12, lineHeight: 16, fontWeight: '700' },
           // Altura própria (somando a área segura do aparelho): na altura padrão o rótulo era cortado na web.
           tabBarStyle: {
             height: TAB_BAR_HEIGHT + insets.bottom,
@@ -63,28 +80,24 @@ export function AppNavigator() {
       >
         <Tab.Screen
           name="Dashboard"
-          component={DashboardScreen}
           options={{
             title: 'IoT Control',
+            headerTitle: BrandTitle,
             tabBarLabel: 'Painel',
-            tabBarIcon: ({ focused }) => <TabIcon symbol="📊" focused={focused} />,
+            tabBarIcon: tabIcon('dashboard'),
           }}
-        />
+        >
+          {({ navigation }) => <DashboardScreen onOpenHistory={() => navigation.navigate('History')} />}
+        </Tab.Screen>
         <Tab.Screen
           name="History"
           component={HistoryScreen}
-          options={{
-            title: 'Histórico',
-            tabBarIcon: ({ focused }) => <TabIcon symbol="📜" focused={focused} />,
-          }}
+          options={{ title: 'Histórico', tabBarIcon: tabIcon('list') }}
         />
         <Tab.Screen
           name="Settings"
           component={SettingsScreen}
-          options={{
-            title: 'Configurações',
-            tabBarIcon: ({ focused }) => <TabIcon symbol="⚙️" focused={focused} />,
-          }}
+          options={{ title: 'Configurações', tabBarIcon: tabIcon('sliders') }}
         />
       </Tab.Navigator>
     </NavigationContainer>
@@ -92,11 +105,7 @@ export function AppNavigator() {
 }
 
 const styles = StyleSheet.create({
-  // Altura fixa: sem ela a linha do emoji é maior que o espaço do ícone e empurra o rótulo da aba.
-  icon: {
-    fontSize: 18,
-    lineHeight: 22,
-    height: 22,
-    textAlign: 'center',
+  logo: {
+    paddingLeft: 16,
   },
 });

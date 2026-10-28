@@ -1,11 +1,15 @@
 import { useCallback, useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import type { ReactNode } from 'react';
 
 import { AppButton } from '../components/AppButton';
 import { ConnectionStatus } from '../components/ConnectionStatus';
+import { Icon } from '../components/Icon';
+import type { IconName } from '../components/Icon';
 import { DEFAULT_BROKER_URL, TOPICS } from '../config/mqttConfig';
 import { useMqtt } from '../context/MqttContext';
 import { useTheme } from '../themes/ThemeContext';
+import { withAlpha } from '../utils/color';
 
 interface Feedback {
   kind: 'error' | 'success';
@@ -26,6 +30,28 @@ const TOPIC_LIST = [
   { topic: TOPICS.comando, direction: 'Publicação', example: '{"action":"ON"}' },
 ];
 
+function SectionCard({ icon, title, children }: { icon: IconName; title: string; children: ReactNode }) {
+  const { colors } = useTheme();
+
+  return (
+    <View
+      style={[
+        styles.card,
+        { backgroundColor: colors.surface, borderColor: colors.border, boxShadow: colors.cardShadow },
+      ]}
+    >
+      <View style={styles.cardHeader}>
+        <View style={[styles.chip, { backgroundColor: withAlpha(colors.accent, 0.12) }]}>
+          <Icon name={icon} size={18} color={colors.accent} />
+        </View>
+        <Text style={[styles.cardTitle, { color: colors.text }]}>{title}</Text>
+      </View>
+
+      {children}
+    </View>
+  );
+}
+
 function BrokerForm({ initialUrl, feedback, onSave, onEdit }: BrokerFormProps) {
   const { colors } = useTheme();
   const [url, setUrl] = useState(initialUrl);
@@ -41,8 +67,7 @@ function BrokerForm({ initialUrl, feedback, onSave, onEdit }: BrokerFormProps) {
   };
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <Text style={[styles.cardTitle, { color: colors.text }]}>Broker MQTT</Text>
+    <SectionCard icon="sliders" title="Broker MQTT">
       <Text style={[styles.hint, { color: colors.textSecondary }]}>
         Use o endereço WebSocket do broker (ws:// ou wss://), não a porta MQTT TCP 1883.
       </Text>
@@ -56,13 +81,13 @@ function BrokerForm({ initialUrl, feedback, onSave, onEdit }: BrokerFormProps) {
         returnKeyType="done"
         placeholder={DEFAULT_BROKER_URL}
         placeholderTextColor={colors.muted}
-        selectionColor={colors.primary}
+        selectionColor={colors.accent}
         value={url}
         onChangeText={handleChange}
         onSubmitEditing={() => onSave(url)}
         style={[
           styles.input,
-          { color: colors.text, backgroundColor: colors.background, borderColor: colors.border },
+          { color: colors.text, backgroundColor: colors.surfaceAlt, borderColor: colors.border },
         ]}
       />
 
@@ -84,7 +109,7 @@ function BrokerForm({ initialUrl, feedback, onSave, onEdit }: BrokerFormProps) {
           onPress={handleRestoreDefault}
         />
       </View>
-    </View>
+    </SectionCard>
   );
 }
 
@@ -133,10 +158,10 @@ export function SettingsScreen() {
         onEdit={clearFeedback}
       />
 
-      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <SectionCard icon={isDark ? 'moon' : 'sun'} title="Aparência">
         <View style={styles.themeRow}>
           <View style={styles.themeText}>
-            <Text style={[styles.cardTitle, { color: colors.text }]}>Tema escuro</Text>
+            <Text style={[styles.themeTitle, { color: colors.text }]}>Tema escuro</Text>
             <Text style={[styles.hint, { color: colors.textSecondary }]}>
               Tema atual: {isDark ? 'Escuro' : 'Claro'}. A escolha fica salva no aparelho.
             </Text>
@@ -148,50 +173,78 @@ export function SettingsScreen() {
             onValueChange={toggleMode}
             trackColor={{ false: colors.muted, true: colors.primary }}
             thumbColor="#FFFFFF"
+            {...webSwitchProps}
           />
         </View>
-      </View>
+      </SectionCard>
 
-      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        <Text style={[styles.cardTitle, { color: colors.text }]}>Tópicos MQTT</Text>
+      <SectionCard icon="list" title="Tópicos MQTT">
+        {TOPIC_LIST.map((item) => {
+          const isPublish = item.direction === 'Publicação';
+          const color = isPublish ? colors.accent : colors.success;
 
-        {TOPIC_LIST.map((item) => (
-          <View key={item.topic} style={styles.topic}>
-            <Text style={[styles.topicDirection, { color: colors.primary }]}>{item.direction}</Text>
-            <Text style={[styles.topicName, { color: colors.textSecondary }]}>{item.topic}</Text>
-            <Text style={[styles.topicExample, { color: colors.muted }]}>{item.example}</Text>
-          </View>
-        ))}
-      </View>
+          return (
+            <View key={item.topic} style={[styles.topic, { backgroundColor: colors.surfaceAlt }]}>
+              <View style={styles.topicHeader}>
+                <Text
+                  style={[
+                    styles.topicDirection,
+                    { color, backgroundColor: withAlpha(color, 0.14) },
+                  ]}
+                >
+                  {item.direction}
+                </Text>
+                <Text style={[styles.topicExample, { color: colors.muted }]}>{item.example}</Text>
+              </View>
+              <Text style={[styles.topicName, { color: colors.textSecondary }]}>{item.topic}</Text>
+            </View>
+          );
+        })}
+      </SectionCard>
     </ScrollView>
   );
 }
 
 const monospace = Platform.select({ ios: 'Menlo', default: 'monospace' });
 
+// No React Native Web a bolinha "ligada" usa activeThumbColor (propriedade só da web).
+const webSwitchProps = Platform.OS === 'web' ? { activeThumbColor: '#FFFFFF' } : {};
+
 const styles = StyleSheet.create({
   content: {
     padding: 16,
-    gap: 16,
+    gap: 14,
   },
   card: {
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
+    gap: 12,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 10,
   },
+  chip: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '800',
   },
   hint: {
     fontSize: 13,
   },
   input: {
-    minHeight: 48,
+    minHeight: 50,
     borderWidth: 1,
     borderRadius: 12,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     fontSize: 14,
   },
   feedback: {
@@ -217,20 +270,35 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 4,
   },
+  themeTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+  },
   topic: {
-    gap: 2,
-    paddingTop: 6,
+    gap: 6,
+    padding: 12,
+    borderRadius: 12,
+  },
+  topicHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   topicDirection: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 999,
+    overflow: 'hidden',
   },
   topicName: {
     fontSize: 12,
     fontFamily: monospace,
   },
   topicExample: {
-    fontSize: 12,
+    fontSize: 11,
     fontFamily: monospace,
   },
 });

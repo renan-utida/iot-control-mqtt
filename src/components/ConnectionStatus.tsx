@@ -1,8 +1,9 @@
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { useTheme } from '../themes/ThemeContext';
 import type { ThemeColors } from '../themes/colors';
 import type { ConnectionStatus as Status } from '../types/mqtt';
+import { withAlpha } from '../utils/color';
 
 interface ConnectionStatusProps {
   status: Status;
@@ -38,15 +39,26 @@ export function ConnectionStatus({ status, detail, brokerUrl }: ConnectionStatus
     <View
       accessible
       accessibilityLabel={`Status da conexão: ${LABELS[status]}${detail ? `. ${detail}` : ''}`}
-      style={[styles.container, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      style={[
+        styles.container,
+        { backgroundColor: colors.surface, borderColor: colors.border, boxShadow: colors.cardShadow },
+      ]}
     >
       <View style={styles.row}>
-        {status === 'connecting' ? (
-          <ActivityIndicator size="small" color={color} />
-        ) : (
-          <View style={[styles.dot, { backgroundColor: color }]} />
-        )}
-        <Text style={[styles.label, { color }]}>{LABELS[status]}</Text>
+        <View
+          style={[
+            styles.pill,
+            { backgroundColor: withAlpha(color, 0.14), borderColor: withAlpha(color, 0.4) },
+          ]}
+        >
+          {status === 'connecting' ? (
+            <ActivityIndicator size="small" color={color} />
+          ) : (
+            <View style={[styles.dot, { backgroundColor: color }]} />
+          )}
+          <Text style={[styles.label, { color }]}>{LABELS[status]}</Text>
+        </View>
+
       </View>
 
       {detail ? (
@@ -66,29 +78,41 @@ export function ConnectionStatus({ status, detail, brokerUrl }: ConnectionStatus
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
-    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     borderWidth: 1,
     gap: 6,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    borderWidth: 1,
   },
   dot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   label: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '700',
-  },
-  detail: {
-    fontSize: 14,
   },
   broker: {
     fontSize: 12,
+    fontFamily: Platform.select({ ios: 'Menlo', default: 'monospace' }),
+  },
+  detail: {
+    fontSize: 13,
   },
 });

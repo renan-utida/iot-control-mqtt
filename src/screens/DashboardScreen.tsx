@@ -1,16 +1,24 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '../components/AppButton';
+import { BrandSplash } from '../components/BrandSplash';
 import { ConnectionStatus } from '../components/ConnectionStatus';
+import { Icon } from '../components/Icon';
 import { LampCard } from '../components/LampCard';
+import { RecentActivity } from '../components/RecentActivity';
 import { SensorCard } from '../components/SensorCard';
 import { useMqtt } from '../context/MqttContext';
 import { useTheme } from '../themes/ThemeContext';
 import type { LampAction } from '../types/mqtt';
+import { withAlpha } from '../utils/color';
 import { formatTime } from '../utils/format';
 
-export function DashboardScreen() {
+interface DashboardScreenProps {
+  onOpenHistory?: () => void;
+}
+
+export function DashboardScreen({ onOpenHistory }: DashboardScreenProps) {
   const { colors } = useTheme();
   const {
     isReady,
@@ -20,6 +28,7 @@ export function DashboardScreen() {
     temperature,
     humidity,
     lampState,
+    history,
     commandStatus,
     commandError,
     invalidMessage,
@@ -47,12 +56,7 @@ export function DashboardScreen() {
   );
 
   if (!isReady) {
-    return (
-      <View style={[styles.loading, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Carregando preferências...</Text>
-      </View>
-    );
+    return <BrandSplash message="Carregando preferências..." />;
   }
 
   const canConnect = status === 'disconnected' || status === 'error';
@@ -69,8 +73,24 @@ export function DashboardScreen() {
       ) : null}
 
       <View style={styles.row}>
-        <SensorCard icon="🌡️" title="Temperatura" unit="°C" reading={temperature} />
-        <SensorCard icon="💧" title="Umidade" unit="%" reading={humidity} />
+        <SensorCard
+          icon="thermometer"
+          title="Temperatura"
+          unit="°C"
+          reading={temperature}
+          color={colors.temperature}
+          min={10}
+          max={40}
+        />
+        <SensorCard
+          icon="droplet"
+          title="Umidade"
+          unit="%"
+          reading={humidity}
+          color={colors.humidity}
+          min={0}
+          max={100}
+        />
       </View>
 
       <LampCard
@@ -82,46 +102,49 @@ export function DashboardScreen() {
       />
 
       {invalidMessage ? (
-        <View style={[styles.notice, { backgroundColor: colors.surface, borderColor: colors.warning }]}>
-          <Text style={[styles.noticeTitle, { color: colors.warning }]}>Mensagem inválida ignorada</Text>
-          <Text style={[styles.noticeText, { color: colors.textSecondary }]}>
-            {invalidMessage.reason} ({formatTime(invalidMessage.timestamp)})
-          </Text>
+        <View style={[styles.notice, { backgroundColor: withAlpha(colors.warning, 0.12) }]}>
+          <Icon name="alert" size={20} color={colors.warning} />
+          <View style={styles.noticeText}>
+            <Text style={[styles.noticeTitle, { color: colors.warning }]}>Mensagem inválida ignorada</Text>
+            <Text style={[styles.noticeBody, { color: colors.textSecondary }]}>
+              {invalidMessage.reason} ({formatTime(invalidMessage.timestamp)})
+            </Text>
+          </View>
         </View>
       ) : null}
+
+      <RecentActivity messages={history} onOpenHistory={onOpenHistory} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  loadingText: {
-    fontSize: 14,
-  },
   content: {
-    padding: 16,
-    gap: 16,
+    flexGrow: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 10,
   },
   row: {
     flexDirection: 'row',
-    gap: 12,
+    gap: 10,
   },
   notice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    gap: 4,
+    borderRadius: 14,
+  },
+  noticeText: {
+    flex: 1,
+    gap: 2,
   },
   noticeTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  noticeText: {
+  noticeBody: {
     fontSize: 13,
   },
 });

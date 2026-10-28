@@ -2,6 +2,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 
 import { useTheme } from '../themes/ThemeContext';
+import { withAlpha } from '../utils/color';
 
 type AppButtonVariant = 'primary' | 'secondary' | 'danger';
 
@@ -24,10 +25,16 @@ export function AppButton({
 }: AppButtonProps) {
   const { colors } = useTheme();
 
-  const isFilled = variant === 'primary';
-  const accent = variant === 'danger' ? colors.danger : colors.primary;
-  const textColor = isFilled ? colors.onPrimary : variant === 'danger' ? colors.danger : colors.text;
   const inactive = disabled || loading;
+  const isPrimary = variant === 'primary';
+
+  const backgroundColor = isPrimary
+    ? colors.primary
+    : variant === 'danger'
+      ? withAlpha(colors.danger, 0.08)
+      : colors.surfaceAlt;
+  const borderColor = isPrimary ? colors.primary : variant === 'danger' ? colors.danger : colors.border;
+  const textColor = isPrimary ? colors.onPrimary : variant === 'danger' ? colors.danger : colors.text;
 
   return (
     <Pressable
@@ -37,10 +44,9 @@ export function AppButton({
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
-        isFilled
-          ? { backgroundColor: accent, borderColor: accent }
-          : { backgroundColor: 'transparent', borderColor: variant === 'danger' ? accent : colors.border },
-        { opacity: inactive ? 0.5 : pressed ? 0.8 : 1 },
+        { backgroundColor, borderColor },
+        isPrimary && !inactive ? { boxShadow: `0px 6px 14px 0px ${withAlpha(colors.primary, 0.35)}` } : null,
+        { opacity: inactive ? 0.5 : pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] },
         style,
       ]}
     >
@@ -55,15 +61,16 @@ export function AppButton({
 
 const styles = StyleSheet.create({
   button: {
-    minHeight: 48,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    minHeight: 50,
+    paddingHorizontal: 18,
+    borderRadius: 14,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   label: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
 });

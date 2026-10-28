@@ -3,8 +3,10 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { CommandStatus } from '../context/MqttContext';
 import { useTheme } from '../themes/ThemeContext';
 import type { LampAction, LampState, TimedValue } from '../types/mqtt';
+import { withAlpha } from '../utils/color';
 import { formatTime } from '../utils/format';
 import { AppButton } from './AppButton';
+import { Icon } from './Icon';
 
 interface LampCardProps {
   lamp: TimedValue<LampState> | null;
@@ -36,34 +38,62 @@ export function LampCard({
   const commandMessage = COMMAND_MESSAGES[commandStatus];
   const isSending = sendingAction !== null;
 
+  const bulbColor = isOn ? colors.lampOn : colors.surfaceAlt;
+
   return (
-    <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <View
-        accessible
-        accessibilityLabel={`Lâmpada: ${stateText}`}
-        style={styles.header}
-      >
-        <View style={[styles.bulb, { backgroundColor: isOn ? colors.lampOn : colors.lampOff }]}>
-          <Text style={styles.bulbIcon}>💡</Text>
+    <View
+      style={[
+        styles.card,
+        { backgroundColor: colors.surface, borderColor: colors.border, boxShadow: colors.cardShadow },
+      ]}
+    >
+      <Text style={[styles.title, { color: colors.textSecondary }]}>Lâmpada</Text>
+
+      <View accessible accessibilityLabel={`Lâmpada: ${stateText}`} style={styles.hero}>
+        <View style={[styles.halo, { backgroundColor: withAlpha(colors.lampOn, isOn ? 0.18 : 0.06) }]}>
+          <View
+            style={[
+              styles.bulb,
+              { backgroundColor: bulbColor },
+              isOn ? { boxShadow: `0px 0px 40px 8px ${withAlpha(colors.lampOn, 0.55)}` } : null,
+            ]}
+          >
+            <Icon name="bulb" size={32} strokeWidth={1.8} color={isOn ? colors.onPrimary : colors.muted} />
+          </View>
         </View>
 
-        <View style={styles.headerText}>
-          <Text style={[styles.title, { color: colors.textSecondary }]}>Lâmpada</Text>
-          <Text style={[styles.state, { color: colors.text }]}>{stateText}</Text>
-          {updatedText ? <Text style={[styles.updatedAt, { color: colors.muted }]}>{updatedText}</Text> : null}
-        </View>
+        <Text style={[styles.state, { color: colors.text }]}>{stateText}</Text>
+        {updatedText ? <Text style={[styles.updatedAt, { color: colors.muted }]}>{updatedText}</Text> : null}
       </View>
 
       {commandMessage ? (
-        <Text style={[styles.message, { color: commandStatus === 'timeout' ? colors.warning : colors.textSecondary }]}>
-          {commandMessage}
-        </Text>
+        <View
+          style={[
+            styles.banner,
+            {
+              backgroundColor: withAlpha(commandStatus === 'timeout' ? colors.warning : colors.textSecondary, 0.12),
+            },
+          ]}
+        >
+          {commandStatus === 'timeout' ? <Icon name="alert" size={18} color={colors.warning} /> : null}
+          <Text
+            style={[
+              styles.bannerText,
+              { color: commandStatus === 'timeout' ? colors.warning : colors.textSecondary },
+            ]}
+          >
+            {commandMessage}
+          </Text>
+        </View>
       ) : null}
 
       {errorMessage ? (
-        <Text accessibilityRole="alert" style={[styles.error, { color: colors.danger }]}>
-          {errorMessage}
-        </Text>
+        <View style={[styles.banner, { backgroundColor: withAlpha(colors.danger, 0.1) }]}>
+          <Icon name="alert" size={18} color={colors.danger} />
+          <Text accessibilityRole="alert" style={[styles.bannerText, styles.errorText, { color: colors.danger }]}>
+            {errorMessage}
+          </Text>
+        </View>
       ) : null}
 
       <View style={styles.actions}>
@@ -89,46 +119,60 @@ export function LampCard({
 
 const styles = StyleSheet.create({
   card: {
-    padding: 16,
-    borderRadius: 16,
+    flexGrow: 1,
+    padding: 14,
+    borderRadius: 24,
     borderWidth: 1,
-    gap: 16,
+    gap: 10,
   },
-  header: {
-    flexDirection: 'row',
+  title: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  hero: {
+    flex: 1,
+    minHeight: 120,
     alignItems: 'center',
-    gap: 16,
+    justifyContent: 'center',
+    gap: 2,
+  },
+  halo: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
   },
   bulb: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 68,
+    height: 68,
+    borderRadius: 34,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bulbIcon: {
-    fontSize: 32,
-  },
-  headerText: {
-    flex: 1,
-    gap: 2,
-  },
-  title: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
   state: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
+    textAlign: 'center',
   },
   updatedAt: {
     fontSize: 12,
   },
-  message: {
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 12,
+    borderRadius: 12,
+  },
+  bannerText: {
+    flex: 1,
     fontSize: 14,
   },
-  error: {
-    fontSize: 14,
+  errorText: {
     fontWeight: '600',
   },
   actions: {

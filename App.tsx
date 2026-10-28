@@ -1,9 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { MqttProvider } from './src/context/MqttContext';
-import { DashboardScreen } from './src/screens/DashboardScreen';
+import { AppNavigator } from './src/navigation/AppNavigator';
 import { ThemeProvider, useTheme } from './src/themes/ThemeContext';
 
 function Main() {
@@ -18,11 +18,10 @@ function Main() {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <>
       <StatusBar style={isDark ? 'light' : 'dark'} />
-      <Text style={[styles.title, { color: colors.text }]}>IoT Control</Text>
-      <DashboardScreen />
-    </SafeAreaView>
+      <AppNavigator />
+    </>
   );
 }
 
@@ -39,18 +38,9 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
   loading: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    paddingHorizontal: 16,
-    paddingTop: 8,
   },
 });
